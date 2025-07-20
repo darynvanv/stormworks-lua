@@ -9,6 +9,8 @@ EL_CoolantPump = false
 EL_FuelP = 0
 EL_AirP = 0
 EL_Temp = 0
+EL_AirM = 1
+EL_FuelM = 0.5
 
 wasTouched = false
 tick = 0
@@ -17,13 +19,22 @@ osbT = ""
 
 function onTick()
 	tick = (tick or 0) + 1
-	EL_RPS = input.getNumber(1)
 	EL_CoolantPump = input.getBool(1)
+	EL_AirPump = input.getBool(2)
+	EL_FuelPump = input.getBool(3)
+	EL_RPS = input.getNumber(1)
+	EL_CoolantP = input.getNumber(2)
+	EL_FuelP = input.getNumber(3)
+	EL_AirP = input.getNumber(4)
+	EL_Temp = input.getNumber(5)
+	
+	output.setNumber(1, EL_AirM)
+	output.setNumber(2, EL_FuelM)
 end
 
 function onDraw()
 	
-	drawEngineSystem(15, 15, 10, 20, 30, 40, 50, 60, 70)
+	drawEngineSystem(10, 10, 10, 20, 30, 40, 50, 60, 70)
 	
 	if osbMenu == 0 then
 		if osb(0,"HEADING",{70,70,70}) then
@@ -89,7 +100,8 @@ function drawEngineSystem(x, y, fuelP, CoolantP, AirP, FuelM, AirM, Temp, RPS)
 		sc(100,100,255)
 		drawFan(x,y,10)
 		
-		sc(0,100,255)
+		sc(0,50,255)
+		dt(x+9, y-8, "COOLANT ON")
 		flashRect(x-1,y+8, 2, 2, 10, true, true)
 		flashRect(x-1,y+10, 2, 2, 10, false, true)
 		flashRect(x-1,y+12, 2, 2, 10, true, true)
@@ -105,10 +117,11 @@ function drawEngineSystem(x, y, fuelP, CoolantP, AirP, FuelM, AirM, Temp, RPS)
 		flashRect(x+9,y+22, 2, 2, 10, true, true)
 	else 
 		sc(255,100,0)
+		dt(x+9, y-8, "COOLANT OFF")
 		drawFan(x,y,0)
 	end
 	
-	sc(0,0,255)
+	sc(0,50,255)
 	dp(x,y,{0,-3},{-2,4},{1,1},{2,0},{1,-1},{-2,-4})
 	
 	sc(100,100,100)
@@ -116,6 +129,27 @@ function drawEngineSystem(x, y, fuelP, CoolantP, AirP, FuelM, AirM, Temp, RPS)
 	
 	
 	drawEngine(x+5,y+10,EL_RPS)
+	
+	sc(0,100,255)
+	dt(x+65, y, "AIR:\n" .. string.format("%03d", math.floor(EL_AirM * 100)))
+	
+	sc(100,100,100)
+	dp(x+59,y+6, {0, 6},{-18, 0}, {0,2},{20,0},{0,-8})
+	
+	sc(0,100,255)
+	flashRect(x+59, y+6, 2, 2, 10, false, true)
+	flashRect(x+59, y+8, 2, 2, 10, true, true)
+	flashRect(x+59, y+10, 2, 2, 10, false, true)
+	flashRect(x+59, y+12, 2, 2, 10, true, true)
+	flashRect(x+57, y+12, 2, 2, 10, false, true)
+	flashRect(x+55, y+12, 2, 2, 10, true, true)
+	flashRect(x+53, y+12, 2, 2, 10, false, true)
+	flashRect(x+51, y+12, 2, 2, 10, true, true)
+	flashRect(x+49, y+12, 2, 2, 10, false, true)
+	flashRect(x+47, y+12, 2, 2, 10, true, true)
+	flashRect(x+45, y+12, 2, 2, 10, false, true)
+	flashRect(x+43, y+12, 2, 2, 10, true, true)
+	flashRect(x+41, y+12, 2, 2, 10, false, true)
 	
 end
 
