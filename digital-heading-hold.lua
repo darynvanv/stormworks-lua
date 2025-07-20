@@ -11,7 +11,7 @@ wasTouched = false
 tick = 0
 
 function compassToHeading(compass)
-	return (compass * 360 + 360) % 360
+	return ( ( -compass * 360 + 360 ) % 360 )
 end
 
 function getHeadingDifference(current, target)
@@ -57,8 +57,8 @@ end
 
 function onDraw()
     screen.setColor(255, 255, 255)
-    screen.drawText(2, 2, "Heading: " .. string.format("%03d °", math.floor(currentHeading)))
-    screen.drawText(2, 10, "Target:  " .. string.format("%03d °", math.floor(targetHeading)))
+    screen.drawText(2, 2, "Heading: " .. string.format("%03d ", math.floor(currentHeading)))
+    screen.drawText(2, 10, "Target:  " .. string.format("%03d ", math.floor(targetHeading)))
 
     -- Simple keypad box
     if isEditing then
@@ -100,23 +100,23 @@ function onDraw()
     -- Engage / Disengage
     if(isEngaged) then
     	screen.setColor(255,0,0)
-		drawRectButton(70, 5, 20, 10, "DIS", labelOffset)
+		drawRectButton(75, 1, 30, 15, "DIS", 7, 5)
 	
-		if(getTouch(50, 5, 50 + 17, 5 + 17)) then
-			setHeadingInput("2")
+		if(getTouch(75, 1, 75 + 20, 1 + 10)) then
+			isEngaged = false
 		end
 	else
     	screen.setColor(0,255,0)
-		drawButton(70, 5, 17, "ENG", labelOffset)
+		drawRectButton(75, 1, 30, 15, "ENG", 7, 5)
 	
-		if(getTouch(50, 5, 50 + 17, 5 + 17)) then
-			setHeadingInput("2")
+		if(getTouch(75, 1, 75 + 20, 1 + 10)) then
+			isEngaged = true
 		end
-	end
-    
+    end
+
+	if(not isEditing) then drawRudderBar() end
     
     wasTouched = isPressed1
-    print(wasTouched)
 end
 
 function getTouch(x1, y1, x2, y2, color)
@@ -226,6 +226,7 @@ function drawKeypad(enabled)
 	
 	if(getTouch(b1x, b1y, b1x + bs, b1y + bs)) then
 		headingInput = {"_","_","_"}
+		headingInputPosition = 1
 	end
 	
 	b1x = b1x + bs + gap
@@ -291,4 +292,35 @@ function isHeadingInputValid()
 	if(tempHeading < 0) then return -3 end
 	
 	return 1
+end
+	
+function drawRudderBar() 
+		-- Rudder Output Bar
+	local barX = 5
+	local barY = 40
+	local barWidth = 60
+	local barHeight = 15
+	
+	-- Background
+	screen.setColor(50, 50, 50)
+	screen.drawRect(barX, barY, barWidth, barHeight)
+	screen.drawText(barX, barY + barHeight + 3, "   RUDDER")
+	
+	-- Output Rudder Bar (centered)
+	local centerX = barX + barWidth / 2
+	local rudderBarLength = (outputRudder or 0) * (barWidth / 2)
+	
+	if outputRudder > 0 then
+	    -- Right
+	    screen.setColor(0, 255, 0)
+	    screen.drawRectF(centerX, barY, rudderBarLength, barHeight)
+	elseif outputRudder < 0 then
+	    -- Left
+	    screen.setColor(255, 0, 0)
+	    screen.drawRectF(centerX + rudderBarLength, barY, -rudderBarLength, barHeight)
+	end
+	
+	-- Center Line
+	screen.setColor(255, 255, 255)
+	screen.drawLine(centerX, barY, centerX, barY + barHeight)
 end
