@@ -2,6 +2,7 @@ targetHeading = 0
 currentHeading = 0
 manualRudder = 0
 outputRudder = 0
+isEngaged = false
 
 headingInput = {"_", "_", "_"}   -- String input from keypad
 headingInputPosition = 1
@@ -40,18 +41,18 @@ function onTick()
     -- If editing, do nothing with autopilot
     if isEditing then
         outputRudder = manualRudder
-    else
+    elseif(isEngaged) then
         -- Heading hold logic (proportional controller)
         local rudderCommand = math.min(1, math.max(-1, differenceToHeading / 45))  -- 45 degrees = max rudder
         -- Combine with manual input
         outputRudder = rudderCommand + manualRudder
         outputRudder = math.max(-1, math.min(1, outputRudder))
+    else
+    	outputRudder = manualRudder
     end
 
     -- Outputs
     output.setNumber(1, outputRudder)
-    output.setNumber(2, currentHeading)
-    output.setNumber(3, differenceToHeading)
 end
 
 function onDraw()
@@ -96,6 +97,23 @@ function onDraw()
     
     drawKeypad(isEditing)
     
+    -- Engage / Disengage
+    if(isEngaged) then
+    	screen.setColor(255,0,0)
+		drawRectButton(70, 5, 20, 10, "DIS", labelOffset)
+	
+		if(getTouch(50, 5, 50 + 17, 5 + 17)) then
+			setHeadingInput("2")
+		end
+	else
+    	screen.setColor(0,255,0)
+		drawButton(70, 5, 17, "ENG", labelOffset)
+	
+		if(getTouch(50, 5, 50 + 17, 5 + 17)) then
+			setHeadingInput("2")
+		end
+	end
+    
     
     wasTouched = isPressed1
     print(wasTouched)
@@ -137,7 +155,7 @@ function drawKeypad(enabled)
 	b1x = b1x + bs + gap
 	b1y = 45
 	drawButton(b1x, b1y, bs, "2", labelOffset)
-	
+
 	if(getTouch(b1x, b1y, b1x + bs, b1y + bs)) then
 		setHeadingInput("2")
 	end
@@ -239,6 +257,13 @@ function drawButton(x, y, size, label, labelOffset)
 	labelOffset = labelOffset or 2
 	screen.drawRect(x, y, size, size)	
 	screen.drawText(x + labelOffset, y + labelOffset, label)
+end
+
+function drawRectButton(x, y, sizeX, sizeY, label, labelOffsetX, labelOffsetY)
+	labelOffsetX = labelOffsetX or 2
+	labelOffsetY = labelOffsetY or labelOffsetX
+	screen.drawRect(x, y, sizeX, sizeY)	
+	screen.drawText(x + labelOffsetX, y + labelOffsetY, label)
 end
 
 function flashText(x, y, label, speed)
