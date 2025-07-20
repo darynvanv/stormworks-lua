@@ -35,8 +35,9 @@ function onTick()
 	input2Y = input.getNumber(6)
 	manualRudder = input.getNumber(7)
 	currentHeading = compassToHeading(input.getNumber(8))
-	currentX = compassToHeading(input.getNumber(9))
-	currentY = compassToHeading(input.getNumber(10))
+	currentSpeed = input.getNumber(9)
+	currentX = input.getNumber(10)
+	currentY = input.getNumber(11)
 	differenceToHeading = getHeadingDifference(currentHeading,targetHeading)
 	if isEditing then
 		outputRudder = manualRudder
