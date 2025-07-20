@@ -6,11 +6,13 @@ osbMenu = 0
 EL_RPS = 0
 EL_CoolantP = 0
 EL_CoolantPump = false
+EL_Starter = false
+EL_Killswitch = false
 EL_FuelP = 0
 EL_AirP = 0
 EL_Temp = 0
 EL_AirM = 1
-EL_FuelM = 0.5
+EL_FuelM = 0.37
 
 wasTouched = false
 tick = 0
@@ -22,81 +24,33 @@ function onTick()
 	EL_CoolantPump = input.getBool(1)
 	EL_AirPump = input.getBool(2)
 	EL_FuelPump = input.getBool(3)
+	EL_Killswitch = input.getBool(4)
 	EL_RPS = input.getNumber(1)
 	EL_CoolantP = input.getNumber(2)
 	EL_FuelP = input.getNumber(3)
 	EL_AirP = input.getNumber(4)
 	EL_Temp = input.getNumber(5)
 	
+	if(EL_Killswitch and EL_RPS < 1) then
+		EL_Starter = true
+	else
+		EL_Starter = false
+	end
+	
 	output.setNumber(1, EL_AirM)
 	output.setNumber(2, EL_FuelM)
+	output.setBool(1, EL_Starter)
 end
 
 function onDraw()
+	--					x   y   fuelP		CoolP			AirP		FuelM		AirM			Temp		RPS			CoolantPump
+	drawEngineSystem(	10, 10, EL_FuelP, 	EL_CoolantP, 	EL_AirP, 	EL_FuelM, 	EL_AirM,		EL_Temp, 	EL_RPS,		EL_CoolantPump)
 	
-	drawEngineSystem(10, 10, 10, 20, 30, 40, 50, 60, 70)
-	
-	if osbMenu == 0 then
-		if osb(0,"HEADING",{70,70,70}) then
-			osbMenu = 1
-			osbT = "-- HEADING --"
-		end
-		if osb(1,"SETTING",{70,70,70}) then
-			osbMenu = 2
-			osbT = "-- SETTING --"
-		end
-		wasTouched = isPressed1
-	end
-	if osbMenu == 1 then
-		local f = {70,70,70}
-		if isEditing then
-			f = {0,180,0}
-		end
-		if osb(0," SET",f) then
-			osbMenu = 1
-			isEditing = not isEditing
-		end
-		if not isEngaged then
-			if osb(1,"ENGAGE",{70,70,70}) then
-				osbMenu = 1
-				isEngaged = true
-				isEditing = false
-			end		else
-if osb(1,"DISENGAGE",{255,50,0}) then
-osbMenu = 1
-isEngaged = false
-isEditing = false
-end
-		end
-		if osb(3," BACK",{70,70,70}) then
-			isEditing = false
-			osbMenu = 0
-			osbT = ""
-		end
-		wasTouched = isPressed1
-	end
-	if osbMenu == 2 then
-		if osb(0," UNIT",{70,70,70}) then
-			unit = unit + 1
-			if unit == 4 then
-				unit = 0
-			end
-		end
-		if osb(3," BACK",{70,70,70}) then
-			osbMenu = 0
-			osbT = ""
-		end
-		wasTouched = isPressed1
-	end
-	sc(255,255,255)
-	local g = 96 - string.len(osbT) * 5 / 2
-	dt(g,140,osbT)
-	wasTouched = isPressed1
 end
 
-function drawEngineSystem(x, y, fuelP, CoolantP, AirP, FuelM, AirM, Temp, RPS)
+function drawEngineSystem(x, y, fuelP, CoolantP, AirP, FuelM, AirM, Temp, RPS, coolantPump)
 	
-	if(EL_CoolantPump) then
+	if(coolantPump) then
 		sc(100,100,255)
 		drawFan(x,y,10)
 		
@@ -128,10 +82,10 @@ function drawEngineSystem(x, y, fuelP, CoolantP, AirP, FuelM, AirM, Temp, RPS)
 	dp(x+1,y+6, {0,16},{9, 0},{0,2},{-9-2, 0},{0,-19})
 	
 	
-	drawEngine(x+5,y+10,EL_RPS)
+	drawEngine(x+5,y+10,RPS)
 	
 	sc(0,100,255)
-	dt(x+65, y, "AIR:\n" .. string.format("%03d", math.floor(EL_AirM * 100)))
+	dt(x+63, y, "AIR:\n" .. string.format("%03d", math.floor(AirM * 100)))
 	
 	sc(100,100,100)
 	dp(x+59,y+6, {0, 6},{-18, 0}, {0,2},{20,0},{0,-8})
@@ -151,6 +105,41 @@ function drawEngineSystem(x, y, fuelP, CoolantP, AirP, FuelM, AirM, Temp, RPS)
 	flashRect(x+43, y+12, 2, 2, 10, true, true)
 	flashRect(x+41, y+12, 2, 2, 10, false, true)
 	
+	
+	
+	sc(150,150,50)
+	dt(x+63, y+30, "FUEL:\n" .. string.format("%03d", math.floor(FuelM * 100)))
+	
+	sc(100,100,100)
+	dp(x+59,y+35, {0, -17}, {-18, 0}, {0, -2}, {20, 0}, {0, 19})
+	
+	
+	dt(x+63, y+15, "A:F\n" .. string.format("%.2f", AirM / FuelM))
+	
+	
+	if(not EL_Killswitch) then
+		sc(255,0,0)
+		drF(x-6, y+45, 80, 7)
+		sc(0,0,0)
+		dt(x-5,y+46, "!KILLSWITCH OFF!")
+	else
+		sc(0,255,0)
+		drF(x-6, y+45, 80, 7)
+		sc(0,0,0)
+		dt(x-5,y+46, "  SYSTEM READY")
+	end
+	
+	if(EL_Starter) then
+		sc(255,255,0)
+		drF(x-6, y+55, 40, 7)
+		sc(0,0,0)
+		dt(x-5,y+56, "STARTER")
+	end
+	
+
+	sc(90,90,90)
+	dt(x-5,y+80, "RPS:" .. string.format("%03d", math.floor(RPS)))
+	dt(x+45,y+80, "TEMP:" .. string.format("%03d", math.floor(Temp)))
 end
 
 function drawFan(x,y,speed)
@@ -214,18 +203,6 @@ function drawEngine(x, y, rps)
 	flashRect(pistonX+36, pistonY+5, 5, 2, flashSpeed, false, true )
 	flashRect(pistonX+38, pistonY+7, 1, 15, flashSpeed, false, true)
 
-end
-
-function getTouch(h,i,j,k,l)
-	local m = false
-	if isPressed1 and not wasTouched and input1X >= h and input1X <= j and input1Y >= i and input1Y <= k then
-		m = true
-	end
-	if l then
-		sc(table.unpack(l))
-		drF(h,i,j - h,k - i)
-	end
-	return m
 end
 
 function flashText(t,u,w,B,i)
