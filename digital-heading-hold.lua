@@ -6,12 +6,15 @@ currentY = 0
 manualRudder = 0
 outputRudder = 0
 isEngaged = false
+osbMenu = 0
+unit = 0
 
 headingInput = {"_", "_", "_"}
 headingInputPosition = 1
 isEditing = false
 wasTouched = false
 tick = 0
+osbT = ""
 
 function compassToHeading(compass)
 	return ( ( -compass * 360 + 360 ) % 360 )
@@ -61,28 +64,34 @@ end
 
 function onDraw()
     sc(255, 255, 255)
-    screen.drawText(2, 2, "HEADING: " .. sf("%03d ", mf(currentHeading)))
-    screen.drawText(2, 10, "TARGET:  " .. sf("%03d ", mf(targetHeading)))
-    screen.drawText(105, 2, "SPD:  " .. sf("%03d knt", mf(currentSpeed * 1.94385)))
-    screen.drawText(110, 12, "GPX:  " .. sf("%07d ", mf(currentX)))
-    screen.drawText(115, 22, "GPY:  " .. sf("%07d ", mf(currentY)))
+    dt(2, 2, "HEADING: " .. sf("%03d ", mf(currentHeading)))
+    dt(2, 10, "TARGET:  " .. sf("%03d ", mf(targetHeading)))
+    
+    if(unit == 0) then dt(120, 2, "SPD:  " .. sf("%03d knt", mf(currentSpeed * 1.94385))) end
+    if(unit == 1) then dt(120, 2, "SPD:  " .. sf("%03d kph", mf(currentSpeed * 3.6))) end
+    if(unit == 2) then dt(120, 2, "SPD:  " .. sf("%03d mph", mf(currentSpeed * 2.23694))) end
+    if(unit == 3) then dt(120, 2, "SPD:  " .. sf("%03d m/s", mf(currentSpeed))) end
+    
+    
+    dt(120, 12, "GPX:  " .. sf("%07d ", mf(currentX)))
+    dt(120, 22, "GPY:  " .. sf("%07d ", mf(currentY)))
 
     -- Simple keypad box
     if isEditing then
     	
     	if(isHeadingInputValid() == -1) then
         	sc(255, 0, 0)
-        	screen.drawText(5, 37, "ERR: INVALID")
+        	dt(5, 37, "ERR: INVALID")
         elseif(isHeadingInputValid() == -2) then
         	sc(255, 0, 0)
-        	screen.drawText(5, 37, "ERR: MAX")
+        	dt(5, 37, "ERR: MAX")
     	elseif(isHeadingInputValid() == 1) then
         	sc(0, 255, 0)
-        	screen.drawText(5, 37, "OKA: ACCEPT")
+        	dt(5, 37, "OKA: ACCEPT")
     	end
     	
 		dr(5, 20, 60, 15)
-        screen.drawText(10, 25, "Set: " .. sf("%s %s %s", headingInput[1], headingInput[2], headingInput[3]))
+        dt(10, 25, "Set: " .. sf("%s %s %s", headingInput[1], headingInput[2], headingInput[3]))
         if(headingInputPosition == 1) then
         	flashText(10, 25,"     -")
     	end
@@ -92,36 +101,87 @@ function onDraw()
         if(headingInputPosition == 3) then
         	flashText(10, 25,"         -")
     	end
-    else
-        sc(255, 255, 255)
-		dr(1, 20, 70, 15)	
-		local b0Pressed = false
-		if(getTouch(1,20,70,35)) then
-			isEditing = true
-		end
-        screen.drawText(11, 25, "Tap to Set")
     end
     
     drawKeypad(isEditing)
     
     -- Engage / Disengage
     if(isEngaged) then
-    	sc(255,0,0)
-		drawRectButton(70, 1, 20, 15, "DIS", 3, 5)
-	
-		if(getTouch(70, 1, 70 + 20, 1 + 15)) then
-			isEngaged = false
-		end
-	else
     	sc(0,255,0)
-		drawRectButton(70, 1, 20, 15, "ENG", 3, 5)
-	
-		if(getTouch(70, 1, 70 + 20, 1 + 15)) then
-			isEngaged = true
-		end
+		drF(75, 1, 25, 15)
+    	sc(0,0,0)
+		dt(80, 6, "ENG")
+    	sc(255,0,0)
+		dr(75, 16, 25, 15)
+		dt(80, 21, "DIS")
+	else
+    	sc(255,255,255)
+		dr(75, 1, 25, 15)
+		dt(80, 6, "ENG")
+    	sc(255,0,0)
+		drF(75, 16, 25, 15)
+    	sc(0,0,0)
+		dt(80, 21, "DIS")
     end
 
 	if(not isEditing) then drawRudderBar() end
+    
+    
+    if(osbMenu == 0) then
+	    if(osb(0, "HEADING", {70,70,70})) then 
+	    	osbMenu = 1 
+	    	osbT = "-- HEADING --"
+    	end
+	    if(osb(1, "SETTING", {70,70,70})) then 
+	    	osbMenu = 2 
+	    	osbT = "-- SETTING --"
+    	end
+    wasTouched = isPressed1
+    end
+    
+    if(osbMenu == 1) then
+    	local setColor = {70,70,70}
+    	if(isEditing) then setColor = {0,180,0} end
+	    if(osb(0, " SET", setColor)) then 
+	    	osbMenu = 1 
+	    	isEditing =  not isEditing
+    	end
+    	if(not isEngaged) then
+		    if(osb(1, "ENGAGE", {70,70,70})) then 
+		    	osbMenu = 1 
+		    	isEngaged = true
+	    		isEditing = false
+	    	end
+    	else
+    		if(osb(1, "DISENGAGE", {255,50,0})) then 
+		    	osbMenu = 1 
+		    	isEngaged = false
+	    		isEditing = false
+	    	end
+    	end
+    	if(osb(3, " BACK", {70,70,70})) then 
+    		isEditing = false
+    		osbMenu = 0 
+    		osbT = ""
+		end
+    	wasTouched = isPressed1
+    end
+
+	if(osbMenu == 2) then
+		if(osb(0, " UNIT", {70,70,70})) then 
+			unit = unit + 1
+			if(unit == 4 ) then unit = 0 end
+    	end
+    	if(osb(3, " BACK", {70,70,70})) then 
+    		osbMenu = 0 
+    		osbT = ""
+		end
+    	wasTouched = isPressed1
+	end
+    
+    sc(255,255,255)
+    local osbX = 96 - ((string.len(osbT) * 5)) / 2
+    dt(osbX, 140, osbT)
     
     wasTouched = isPressed1
 end
@@ -264,20 +324,20 @@ end
 function drawButton(x, y, size, label, labelOffset)
 	labelOffset = labelOffset or 2
 	dr(x, y, size, size)	
-	screen.drawText(x + labelOffset, y + labelOffset, label)
+	dt(x + labelOffset, y + labelOffset, label)
 end
 
 function drawRectButton(x, y, sizeX, sizeY, label, labelOffsetX, labelOffsetY)
 	labelOffsetX = labelOffsetX or 2
 	labelOffsetY = labelOffsetY or labelOffsetX
 	dr(x, y, sizeX, sizeY)	
-	screen.drawText(x + labelOffsetX, y + labelOffsetY, label)
+	dt(x + labelOffsetX, y + labelOffsetY, label)
 end
 
 function flashText(x, y, label, speed)
 	speed = speed or 10
 	if (tick // speed) % 2 == 0 then	
-		screen.drawText(x, y, label)
+		dt(x, y, label)
 	end
 end
 
@@ -303,15 +363,15 @@ end
 	
 function drawRudderBar() 
 		-- Rudder Output Bar
-	local barX = 100
-	local barY = 40
-	local barWidth = 70
+	local barX = 120
+	local barY = 50
+	local barWidth = 65
 	local barHeight = 15
 	
 	-- Background
 	sc(50, 50, 50)
 	dr(barX, barY, barWidth, barHeight)
-	screen.drawText(barX, barY + barHeight + 3, "   RUDDER")
+	dt(barX, barY + barHeight + 3, "   RUDDER")
 	
 	-- Output Rudder Bar (centered)
 	local centerX = barX + barWidth / 2
@@ -342,9 +402,25 @@ end
 function drF(x,y,w,h)
 	screen.drawRectF(x,y,w,h)
 end
+function dt(x,y,t)
+	screen.drawText(x,y,t)
+end
 function mf(v)
 	return math.floor(v)
 end
 function sf(f, ...)
 	return string.format(f, ...)
+end
+
+function osb(pos, label, color)
+	local s = 16
+	local x = 15 + (s * pos) + (40 * pos)
+    local x1 = x - (((string.len(label) * 3)) / 2)
+	sc(50,50,50)
+	drF(x-1, 160-1, s+2, s+2)
+	sc(table.unpack(color))
+	drF(x, 160, s, s)
+	screen.drawLine(x + (s/2), 178, x + (s/2), 182)
+	dt(x1, 185, label)
+	return getTouch(x, 160, x+s, 160 +s)
 end
