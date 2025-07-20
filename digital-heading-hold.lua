@@ -1,10 +1,13 @@
 targetHeading = 0
 currentHeading = 0
+currentSpeed = 0
+currentX = 0
+currentY = 0
 manualRudder = 0
 outputRudder = 0
 isEngaged = false
 
-headingInput = {"_", "_", "_"}   -- String input from keypad
+headingInput = {"_", "_", "_"}
 headingInputPosition = 1
 isEditing = false
 wasTouched = false
@@ -34,48 +37,52 @@ function onTick()
 	input2Y = input.getNumber(6)
     
     -- Inputs
-    manualRudder = input.getNumber(7)   -- Manual rudder [-1 to 1]
-    currentHeading = compassToHeading(input.getNumber(8)) -- Compass heading (0 - 360)
+    manualRudder = input.getNumber(7)
+    currentHeading = compassToHeading(input.getNumber(8))
+    currentHeading = compassToHeading(input.getNumber(9))
+    
+    currentX = compassToHeading(input.getNumber(10))
+    currentY = compassToHeading(input.getNumber(11))
+    
     differenceToHeading = getHeadingDifference(currentHeading, targetHeading)
     
-    -- If editing, do nothing with autopilot
     if isEditing then
         outputRudder = manualRudder
     elseif(isEngaged) then
-        -- Heading hold logic (proportional controller)
-        local rudderCommand = math.min(1, math.max(-1, differenceToHeading / 45))  -- 45 degrees = max rudder
-        -- Combine with manual input
+        local rudderCommand = math.min(1, math.max(-1, differenceToHeading / 45))
         outputRudder = rudderCommand + manualRudder
         outputRudder = math.max(-1, math.min(1, outputRudder))
     else
     	outputRudder = manualRudder
     end
 
-    -- Outputs
     output.setNumber(1, outputRudder)
 end
 
 function onDraw()
-    screen.setColor(255, 255, 255)
-    screen.drawText(2, 2, "Heading: " .. string.format("%03d ", math.floor(currentHeading)))
-    screen.drawText(2, 10, "Target:  " .. string.format("%03d ", math.floor(targetHeading)))
+    sc(255, 255, 255)
+    screen.drawText(2, 2, "HEADING: " .. sf("%03d ", mf(currentHeading)))
+    screen.drawText(2, 10, "TARGET:  " .. sf("%03d ", mf(targetHeading)))
+    screen.drawText(105, 2, "SPD:  " .. sf("%03d knt", mf(currentSpeed * 1.94385)))
+    screen.drawText(110, 12, "GPX:  " .. sf("%07d ", mf(currentX)))
+    screen.drawText(115, 22, "GPY:  " .. sf("%07d ", mf(currentY)))
 
     -- Simple keypad box
     if isEditing then
     	
     	if(isHeadingInputValid() == -1) then
-        	screen.setColor(255, 0, 0)
+        	sc(255, 0, 0)
         	screen.drawText(5, 37, "ERR: INVALID")
         elseif(isHeadingInputValid() == -2) then
-        	screen.setColor(255, 0, 0)
+        	sc(255, 0, 0)
         	screen.drawText(5, 37, "ERR: MAX")
     	elseif(isHeadingInputValid() == 1) then
-        	screen.setColor(0, 255, 0)
+        	sc(0, 255, 0)
         	screen.drawText(5, 37, "OKA: ACCEPT")
     	end
     	
-		screen.drawRect(5, 20, 60, 15)
-        screen.drawText(10, 25, "Set: " .. string.format("%s %s %s", headingInput[1], headingInput[2], headingInput[3]))
+		dr(5, 20, 60, 15)
+        screen.drawText(10, 25, "Set: " .. sf("%s %s %s", headingInput[1], headingInput[2], headingInput[3]))
         if(headingInputPosition == 1) then
         	flashText(10, 25,"     -")
     	end
@@ -86,30 +93,30 @@ function onDraw()
         	flashText(10, 25,"         -")
     	end
     else
-        screen.setColor(255, 255, 255)
-		screen.drawRect(5, 20, 60, 15)	
+        sc(255, 255, 255)
+		dr(1, 20, 70, 15)	
 		local b0Pressed = false
-		if(getTouch(5,25,65,35)) then
+		if(getTouch(1,20,70,35)) then
 			isEditing = true
 		end
-        screen.drawText(10, 25, "Tap to Set")
+        screen.drawText(11, 25, "Tap to Set")
     end
     
     drawKeypad(isEditing)
     
     -- Engage / Disengage
     if(isEngaged) then
-    	screen.setColor(255,0,0)
-		drawRectButton(75, 1, 30, 15, "DIS", 7, 5)
+    	sc(255,0,0)
+		drawRectButton(70, 1, 20, 15, "DIS", 3, 5)
 	
-		if(getTouch(75, 1, 75 + 20, 1 + 10)) then
+		if(getTouch(70, 1, 70 + 20, 1 + 15)) then
 			isEngaged = false
 		end
 	else
-    	screen.setColor(0,255,0)
-		drawRectButton(75, 1, 30, 15, "ENG", 7, 5)
+    	sc(0,255,0)
+		drawRectButton(70, 1, 20, 15, "ENG", 3, 5)
 	
-		if(getTouch(75, 1, 75 + 20, 1 + 10)) then
+		if(getTouch(70, 1, 70 + 20, 1 + 15)) then
 			isEngaged = true
 		end
     end
@@ -127,8 +134,8 @@ function getTouch(x1, y1, x2, y2, color)
     end
     
     if color then
-        screen.setColor(table.unpack(color))
-        screen.drawRectF(x1, y1, x2 - x1, y2 - y1)
+        sc(table.unpack(color))
+        drF(x1, y1, x2 - x1, y2 - y1)
     end
 
     return touched
@@ -140,7 +147,7 @@ function drawKeypad(enabled)
 	local labelOffset = 7
 	
 	if(enabled) then
-		screen.setColor(255,255,255)
+		sc(255,255,255)
 	
 	-- 1 - 3
 	
@@ -221,7 +228,7 @@ function drawKeypad(enabled)
 	-- X 0 and accept
 	b1x = 5
 	b1y = b1y + bs + gap
-	screen.setColor(255,0,0)
+	sc(255,0,0)
 	drawButton(b1x, b1y, bs, "X", labelOffset)
 	
 	if(getTouch(b1x, b1y, b1x + bs, b1y + bs)) then
@@ -231,7 +238,7 @@ function drawKeypad(enabled)
 	
 	b1x = b1x + bs + gap
 	b1y = b1y
-	screen.setColor(255,255,255)
+	sc(255,255,255)
 	drawButton(b1x, b1y, bs, "0", labelOffset)
 	
 	if(getTouch(b1x, b1y, b1x + bs, b1y + bs)) then
@@ -240,7 +247,7 @@ function drawKeypad(enabled)
 	
 	b1x = b1x + bs + gap
 	b1y = b1y
-	screen.setColor(0,255,0)
+	sc(0,255,0)
 	if(isHeadingInputValid() == 1) then
 		drawButton(b1x, b1y, bs, "A", labelOffset)
 		
@@ -250,20 +257,20 @@ function drawKeypad(enabled)
 		end
 	end
 	else
-		screen.setColor(25,25,25)
+		sc(25,25,25)
 	end
 end
 
 function drawButton(x, y, size, label, labelOffset)
 	labelOffset = labelOffset or 2
-	screen.drawRect(x, y, size, size)	
+	dr(x, y, size, size)	
 	screen.drawText(x + labelOffset, y + labelOffset, label)
 end
 
 function drawRectButton(x, y, sizeX, sizeY, label, labelOffsetX, labelOffsetY)
 	labelOffsetX = labelOffsetX or 2
 	labelOffsetY = labelOffsetY or labelOffsetX
-	screen.drawRect(x, y, sizeX, sizeY)	
+	dr(x, y, sizeX, sizeY)	
 	screen.drawText(x + labelOffsetX, y + labelOffsetY, label)
 end
 
@@ -296,14 +303,14 @@ end
 	
 function drawRudderBar() 
 		-- Rudder Output Bar
-	local barX = 5
+	local barX = 100
 	local barY = 40
-	local barWidth = 60
+	local barWidth = 70
 	local barHeight = 15
 	
 	-- Background
-	screen.setColor(50, 50, 50)
-	screen.drawRect(barX, barY, barWidth, barHeight)
+	sc(50, 50, 50)
+	dr(barX, barY, barWidth, barHeight)
 	screen.drawText(barX, barY + barHeight + 3, "   RUDDER")
 	
 	-- Output Rudder Bar (centered)
@@ -312,15 +319,32 @@ function drawRudderBar()
 	
 	if outputRudder > 0 then
 	    -- Right
-	    screen.setColor(0, 255, 0)
-	    screen.drawRectF(centerX, barY, rudderBarLength, barHeight)
+	    sc(0, 255, 0)
+	    drF(centerX, barY, rudderBarLength, barHeight)
 	elseif outputRudder < 0 then
 	    -- Left
-	    screen.setColor(255, 0, 0)
-	    screen.drawRectF(centerX + rudderBarLength, barY, -rudderBarLength, barHeight)
+	    sc(255, 0, 0)
+	    drF(centerX + rudderBarLength, barY, -rudderBarLength, barHeight)
 	end
 	
 	-- Center Line
-	screen.setColor(255, 255, 255)
+	sc(255, 255, 255)
 	screen.drawLine(centerX, barY, centerX, barY + barHeight)
+end
+
+
+function sc(r,g,b)
+	screen.setColor(r,g,b)
+end
+function dr(x,y,w,h)
+	screen.drawRect(x,y,w,h)	
+end
+function drF(x,y,w,h)
+	screen.drawRectF(x,y,w,h)
+end
+function mf(v)
+	return math.floor(v)
+end
+function sf(f, ...)
+	return string.format(f, ...)
 end
